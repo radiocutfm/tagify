@@ -73,6 +73,7 @@ Tagify.prototype = {
         duplicates: false, // Flag - allow tuplicate tags
         whitelist: [], // Array of tags to suggest as the user types (can be used along with "enforceWhitelist" setting)
         blacklist: [], // A list of non-allowed tags
+        acWithEnter: false, // Flag - Enter autocompletes
         enforceWhitelist: false, // Flag - Only allow tags allowed in whitelist
         keepInvalidTags: false, // Flag - if true, do not remove tags which did not pass validation
         autoComplete: true, // Flag - tries to autocomplete the input's value while typing
@@ -84,7 +85,7 @@ Tagify.prototype = {
         }
     },
 
-    customEventsList: ['add', 'remove', 'invalid'],
+    customEventsList: ['add', 'remove', 'invalid', 'input'],
 
     /**
      * utility method
@@ -305,8 +306,11 @@ Tagify.prototype = {
                     if (this.addTags(value).length) {
                         this.input.set.call(this); // clear the input field's value
                     }
-                } else if (this.settings.dropdown.enabled && this.settings.whitelist.length) {
-                    this.dropdown[showSuggestions ? "show" : "hide"].call(this, value);
+                } else {
+                    this.trigger('input', this.extend({}, { inputValue: value }));
+                    if (this.settings.dropdown.enabled && this.settings.whitelist.length) {
+                        this.dropdown[showSuggestions ? "show" : "hide"].call(this, value);
+                    }
                 }
             },
             onInputIE: function onInputIE(e) {
@@ -779,10 +783,15 @@ Tagify.prototype = {
                             break;
 
                         case 'Enter':
-                            e.preventDefault();
-                            newValue = selectedElm ? selectedElm.textContent : this.input.value;
-                            this.addTags(newValue, true);
-                            this.dropdown.hide.call(this);
+                            if (this.settings.acWithEnter && !selectedElm) {
+                                e.preventDefault();
+                                this.input.autocomplete.set.call(this);
+                            } else {
+                                e.preventDefault();
+                                newValue = selectedElm ? selectedElm.textContent : this.input.value;
+                                this.addTags(newValue, true);
+                                this.dropdown.hide.call(this);
+                            }
                             break;
 
                         case 'ArrowRight':
